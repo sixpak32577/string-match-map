@@ -9,9 +9,14 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+/**
+ * A strictly {@link String}-keyed {@link Map} where the
+ * key only needs to partially match the target. Essentially, the
+ * value will be returned when target.contains(key) is {@code true}. 
+ */
 public class StringMatchMap<V> extends AbstractMap<String, V> {
 
-  private AtomicInteger RANK = new AtomicInteger(0);
+  private AtomicInteger rankGenerator = new AtomicInteger(0);
   
   private Entry<V> root = new Entry<>(null, (V) null, 0);
   
@@ -74,7 +79,7 @@ public class StringMatchMap<V> extends AbstractMap<String, V> {
     Entry<V> child = entry.children.get(key.charAt(0));
     if (child == null) {
       // no match, add new child
-      entry.addChild(new Entry<>(key, value, RANK.incrementAndGet()));
+      entry.addChild(new Entry<>(key, value, rankGenerator.incrementAndGet()));
       size++;
       return null;   
     }
@@ -83,7 +88,7 @@ public class StringMatchMap<V> extends AbstractMap<String, V> {
     
     if (childKey.equals(key)) { // exact match
       if (child.value == null) { // new entry
-        child.value = new RankedValue<V>(value, RANK.incrementAndGet());
+        child.value = new RankedValue<V>(value, rankGenerator.incrementAndGet());
         size++;
         return null;
       }
@@ -114,7 +119,7 @@ public class StringMatchMap<V> extends AbstractMap<String, V> {
       
       child.key = childKey.substring(childKeyIdx);
       newChild.addChild(child);
-      newChild.addChild(new Entry<>(key.substring(childKeyIdx), value, RANK.incrementAndGet()));
+      newChild.addChild(new Entry<>(key.substring(childKeyIdx), value, rankGenerator.incrementAndGet()));
       
       size++;
       return null;
@@ -131,7 +136,7 @@ public class StringMatchMap<V> extends AbstractMap<String, V> {
     Entry<V> parent = child.parent;
     parent.removeChild(child);
     
-    Entry<V> newChild = new Entry<>(key, value, RANK.incrementAndGet());
+    Entry<V> newChild = new Entry<>(key, value, rankGenerator.incrementAndGet());
     parent.addChild(newChild);
     
     child.key = childKey.substring(childKeyIdx);
@@ -151,10 +156,8 @@ public class StringMatchMap<V> extends AbstractMap<String, V> {
 
   @Override
   public void clear() {
-    RANK = new AtomicInteger(0);
-    
+    rankGenerator = new AtomicInteger(0);
     root = new Entry<>(null, (V) null, 0);
-    
     size = 0;
   }
 
